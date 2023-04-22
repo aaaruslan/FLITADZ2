@@ -4,7 +4,12 @@
 
 #define MAX_NODES 100
 
-void read_graph(FILE* file, int graph[][MAX_NODES], int* num_nodes) {
+struct graph {
+    int nodes[MAX_NODES][MAX_NODES];
+    int num_nodes;
+};
+
+void read_graph(FILE* file, struct graph* g) {
     char line[256];
     int row = 0;
 
@@ -16,10 +21,10 @@ void read_graph(FILE* file, int graph[][MAX_NODES], int* num_nodes) {
             // Convert token to integer
             int value = atoi(token);
             // Store value in graph
-            graph[row][col++] = value;
+            g->nodes[row][col++] = value;
             // Store value in opposite cell to create a loop
             if (col-1 <= row) {
-                graph[col-1][row] = value;
+                g->nodes[col-1][row] = value;
             }
             // Move to next token
             token = strtok(NULL, " ");
@@ -29,20 +34,20 @@ void read_graph(FILE* file, int graph[][MAX_NODES], int* num_nodes) {
     }
 
     // Set num_nodes to the number of rows
-    *num_nodes = row;
+    g->num_nodes = row;
 }
 
-void write_dot(FILE* file, int graph[][MAX_NODES], int num_nodes) {
+void write_dot(FILE* file, struct graph* g) {
     fprintf(file, "digraph G {\n");
     // Add all nodes
-    for (int i = 0; i < num_nodes; i++) {
+    for (int i = 0; i < g->num_nodes; i++) {
         fprintf(file, "  %d;\n", i);
     }
     // Add edges with labels
-    for (int i = 0; i < num_nodes; i++) {
-        for (int j = i; j < num_nodes; j++) {
-            if (graph[i][j]) {
-                fprintf(file, "  %d -> %d [dir=none, label=%d];\n", i, j, graph[i][j]);
+    for (int i = 0; i < g->num_nodes; i++) {
+        for (int j = i; j < g->num_nodes; j++) {
+            if (g->nodes[i][j]) {
+                fprintf(file, "  %d -> %d [dir=none, label=%d];\n", i, j, g->nodes[i][j]);
             }
         }
     }
@@ -51,8 +56,7 @@ void write_dot(FILE* file, int graph[][MAX_NODES], int num_nodes) {
 
 int main() {
     char filename[100];
-    int graph[MAX_NODES][MAX_NODES] = {0};
-    int num_nodes = 0;
+    struct graph g = {0};
 
     printf("Enter the filename:\n");
     scanf("%s",filename);
@@ -61,14 +65,14 @@ int main() {
         fprintf(stderr, "Error. Unable to open file.\n");
         return 1;
     }
-    read_graph(file, graph, &num_nodes);
+    read_graph(file, &g);
     fclose(file);
     file = fopen("graph.dot", "w");
     if (file == NULL) {
         fprintf(stderr, "Error. Unable to open file.\n");
         return 1;
     }
-    write_dot(file, graph, num_nodes);
+    write_dot(file, &g);
     fclose(file);
     system("dot -Tpng graph.dot -o graph.png");
     return 0;
